@@ -1,0 +1,45 @@
+# ---- Terraform ----
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+.terraform.lock.hcl.bak
+
+# ---- Terraform plan output ----
+# Saved plans can embed secret values in plaintext — never commit them.
+*.tfplan
+*.tfplan.*
+plan.out
+
+# ---- Node / TypeScript ----
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+coverage/
+npm-debug.log*
+yarn-error.log*
+.npm/
+.pnpm-store/
+
+# ---- Env / secrets ----
+.env
+.env.*
+!.env.example
+
+# ---- Editor / OS ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json

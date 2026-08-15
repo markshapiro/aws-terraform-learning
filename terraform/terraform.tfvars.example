@@ -1,0 +1,6 @@
+# Copy this file to terraform.tfvars and adjust as needed.
+# terraform.tfvars is gitignored so your local settings stay out of version control.
+
+aws_region  = "us-east-1"
+# aws_profile = "my-sso-profile"
+environment = "dev"
