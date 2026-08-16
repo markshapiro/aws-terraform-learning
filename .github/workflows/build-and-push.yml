@@ -20,6 +20,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Debug OIDC claims
+        run: |
+          payload=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" \
+            | jq -r '.value' | cut -d. -f2)
+          # pad base64url so it decodes
+          printf '%s' "${payload}$(printf '%*s' $(( (4 - ${#payload} % 4) % 4 )) '' | tr ' ' '=')" \
+            | tr '_-' '/+' | base64 -d | jq '{sub, aud, repository, ref}'
+
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
