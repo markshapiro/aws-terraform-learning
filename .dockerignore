@@ -1,0 +1,13 @@
+node_modules
+dist
+.git
+.github
+terraform
+*.md
+.env
+.env.*
+.gitignore
+.dockerignore
+Dockerfile
+npm-debug.log*
+coverage
