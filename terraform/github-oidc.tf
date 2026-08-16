@@ -3,11 +3,19 @@
 # it and hands back temporary credentials scoped to the role below.
 
 locals {
-  # Default to allowing only pushes on the main branch if no subjects are given.
-  github_oidc_subjects = coalesce(
-    var.github_oidc_subjects,
-    ["repo:${var.github_owner}/${var.github_repo}:ref:refs/heads/main"]
-  )
+  github_repository = "${var.github_owner}/${var.github_repo}"
+
+  # Refs allowed to assume the role. Defaults to the main branch.
+  github_allowed_refs = coalesce(var.github_allowed_refs, ["refs/heads/main"])
+
+  # AWS requires the trust policy to constrain `sub` (or `job_workflow_ref`).
+  # With "immutable subject claims" enabled, `sub` looks like
+  #   repo:owner@<owner_id>/repo@<repo_id>:ref:refs/heads/main
+  # so we wildcard the numeric IDs and pin owner, repo, and ref.
+  github_sub_patterns = [
+    for r in local.github_allowed_refs :
+    "repo:${var.github_owner}@*/${var.github_repo}@*:ref:${r}"
+  ]
 
   github_oidc_provider_arn = var.create_github_oidc_provider ? aws_iam_openid_connect_provider.github[0].arn : data.aws_iam_openid_connect_provider.github[0].arn
 }
@@ -26,7 +34,11 @@ data "aws_iam_openid_connect_provider" "github" {
   url   = "https://token.actions.githubusercontent.com"
 }
 
-# Trust policy: only the GitHub OIDC provider, only our repo's allowed subjects.
+# Trust policy: only the GitHub OIDC provider, scoped to our repo + allowed refs.
+#
+# AWS mandates a constraint on `sub` (or `job_workflow_ref`), so we match `sub`
+# with the numeric owner/repo IDs wildcarded (see local.github_sub_patterns).
+# The extra `repository` StringEquals pins the exact human-readable repo name.
 data "aws_iam_policy_document" "github_actions_assume" {
   statement {
     effect  = "Allow"
@@ -44,9 +56,15 @@ data "aws_iam_policy_document" "github_actions_assume" {
     }
 
     condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:repository"
+      values   = [local.github_repository]
+    }
+
+    condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = local.github_oidc_subjects
+      values   = local.github_sub_patterns
     }
   }
 }

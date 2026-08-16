@@ -40,12 +40,11 @@ variable "github_repo" {
   default     = "aws-terraform-learning"
 }
 
-variable "github_oidc_subjects" {
+variable "github_allowed_refs" {
   description = <<-EOT
-    List of GitHub OIDC 'sub' claims allowed to assume the CI role. Defaults to
-    pushes on the main branch. Add entries like
-    "repo:<owner>/<repo>:ref:refs/tags/*" or
-    "repo:<owner>/<repo>:environment:prod" to widen access.
+    Git refs allowed to assume the CI role. Defaults to the main branch.
+    Add entries like "refs/tags/*" or "refs/heads/release/*" to widen access.
+    Matched against the OIDC 'ref' claim with StringLike (wildcards allowed).
   EOT
   type        = list(string)
   default     = null
