@@ -106,3 +106,32 @@ resource "aws_iam_role_policy" "ecr_push" {
   role   = aws_iam_role.github_actions.id
   policy = data.aws_iam_policy_document.ecr_push.json
 }
+
+# Lets the deploy job trigger a redeploy on the EC2 instance via SSM Run Command.
+data "aws_iam_policy_document" "deploy_ssm" {
+  statement {
+    sid     = "SendCommand"
+    effect  = "Allow"
+    actions = ["ssm:SendCommand"]
+    resources = [
+      aws_instance.app.arn,
+      "arn:aws:ssm:${data.aws_region.current.name}::document/AWS-RunShellScript",
+    ]
+  }
+
+  statement {
+    sid    = "ReadCommandResult"
+    effect = "Allow"
+    actions = [
+      "ssm:GetCommandInvocation",
+      "ssm:ListCommandInvocations",
+    ]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "deploy_ssm" {
+  name   = "deploy-ssm"
+  role   = aws_iam_role.github_actions.id
+  policy = data.aws_iam_policy_document.deploy_ssm.json
+}

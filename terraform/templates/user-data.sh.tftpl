@@ -1,0 +1,17 @@
+#!/bin/bash
+# Runs once at first boot: installs Docker, drops the reusable deploy script on
+# disk, and performs the initial deploy. Later deploys are triggered by GitHub
+# Actions via SSM, which just re-runs /usr/local/bin/deploy-app.sh.
+set -euo pipefail
+
+dnf update -y
+dnf install -y docker
+systemctl enable --now docker
+
+cat > /usr/local/bin/deploy-app.sh <<'DEPLOY_EOF'
+${deploy_script}
+DEPLOY_EOF
+chmod +x /usr/local/bin/deploy-app.sh
+
+# Best-effort first deploy (an image may not exist yet on a brand-new repo).
+/usr/local/bin/deploy-app.sh || true

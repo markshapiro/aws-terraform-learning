@@ -1,0 +1,21 @@
+#!/bin/bash
+# Pulls the latest image from ECR and (re)starts the container.
+# Values are injected by Terraform's templatefile() — there are deliberately no
+# shell variables here, so nothing needs bash-escaping.
+set -euo pipefail
+
+aws ecr get-login-password --region ${region} \
+  | docker login --username AWS --password-stdin ${registry}
+
+docker pull ${image}
+
+# Replace any running container with the freshly pulled image.
+docker rm -f ${container_name} 2>/dev/null || true
+docker run -d \
+  --name ${container_name} \
+  --restart unless-stopped \
+  -p ${host_port}:${container_port} \
+  ${image}
+
+# Reclaim space from the previous image layers.
+docker image prune -f || true

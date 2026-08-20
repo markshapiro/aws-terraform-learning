@@ -55,3 +55,27 @@ variable "create_github_oidc_provider" {
   type        = bool
   default     = true
 }
+
+variable "instance_type" {
+  description = "EC2 instance type running the app container."
+  type        = string
+  default     = "t3.micro"
+}
+
+variable "container_port" {
+  description = "Port the app listens on inside the container (matches PORT in the Dockerfile)."
+  type        = number
+  default     = 3000
+}
+
+variable "host_port" {
+  description = "Port exposed on the EC2 instance and opened to the internet."
+  type        = number
+  default     = 80
+}
+
+variable "app_ingress_cidrs" {
+  description = "CIDR blocks allowed to reach the app port. Defaults to the whole internet; narrow this to your IP for a private demo."
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}

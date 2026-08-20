@@ -17,3 +17,18 @@ output "github_actions_role_arn" {
   description = "IAM role ARN GitHub Actions assumes via OIDC. Set as GitHub var AWS_ROLE_ARN."
   value       = aws_iam_role.github_actions.arn
 }
+
+output "ec2_instance_id" {
+  description = "EC2 instance ID. Set as GitHub var EC2_INSTANCE_ID."
+  value       = aws_instance.app.id
+}
+
+output "ec2_public_ip" {
+  description = "Public IP of the EC2 instance."
+  value       = aws_instance.app.public_ip
+}
+
+output "app_url" {
+  description = "URL the Hello World server is reachable at once deployed."
+  value       = "http://${aws_instance.app.public_ip}:${var.host_port}"
+}

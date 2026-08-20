@@ -43,3 +43,50 @@ jobs:
             ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      EC2_INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Ask SSM to run the on-box deploy script, which pulls :latest and
+      # restarts the container. No SSH, no open port 22.
+      - name: Deploy latest image on EC2 via SSM
+        run: |
+          set -euo pipefail
+          command_id=$(aws ssm send-command \
+            --region "$AWS_REGION" \
+            --instance-ids "$EC2_INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy ${GITHUB_SHA::7}" \
+            --parameters 'commands=["bash /usr/local/bin/deploy-app.sh"]' \
+            --query "Command.CommandId" --output text)
+          echo "SSM command: $command_id"
+
+          aws ssm wait command-executed \
+            --region "$AWS_REGION" \
+            --command-id "$command_id" \
+            --instance-id "$EC2_INSTANCE_ID" || true
+
+          aws ssm get-command-invocation \
+            --region "$AWS_REGION" \
+            --command-id "$command_id" \
+            --instance-id "$EC2_INSTANCE_ID" \
+            --query "{Status:Status,Stdout:StandardOutputContent,Stderr:StandardErrorContent}" \
+            --output json
+
+          status=$(aws ssm get-command-invocation \
+            --region "$AWS_REGION" \
+            --command-id "$command_id" \
+            --instance-id "$EC2_INSTANCE_ID" \
+            --query "Status" --output text)
+          echo "Final status: $status"
+          test "$status" = "Success"
