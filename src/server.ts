@@ -10,7 +10,7 @@ const server = createServer((req, res) => {
   }
 
   res.writeHead(200, { "content-type": "text/plain" });
-  res.end("Hello, World!\n");
+  res.end("Hello, World\n");
 });
 
 server.listen(port, () => {
